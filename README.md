@@ -1,66 +1,36 @@
-## Foundry
+# Uniswap V4 Sandwich Attack Hook and Test Suite
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+This project demonstrates a **sandwich attack protection hook** for Uniswap V4. The project utilizes the Uniswap V4 protocol and Foundry framework for testing.
 
-Foundry consists of:
+## Overview
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+A sandwich attack occurs when a malicious actor (often an MEV bot) places transactions before and after a target transaction to manipulate the price and extract value. This project implements a hook to protect against such attacks and includes test cases to verify the behavior of the system with and without the hook.
 
-## Documentation
+### Features
 
-https://book.getfoundry.sh/
+- **Anti-sandwich Hook**: A custom hook designed to detect and mitigate sandwich attacks by monitoring changes in pool balances before and after swaps.
+- **Test Suite**: Comprehensive test cases to simulate both successful and failed sandwich attacks and ensure the pool behaves correctly under various conditions.
+- **Uniswap V4 Integration**: Built using Uniswap V4’s core and periphery contracts to simulate realistic swap scenarios.
 
-## Usage
+## Installation
 
-### Build
+To run the project, you’ll need to have **Foundry** installed. Follow the steps below to install dependencies and run tests.
 
-```shell
-$ forge build
+### Install Foundry
+
+If you haven't installed Foundry yet, you can install it by running:
+
+```bash
+curl -L https://foundry.paradigm.xyz | bash
+foundryup
 ```
 
-### Test
-
-```shell
-$ forge test
+To install project run:
+```
+forge install https://github.com/AleksDemian/AntiSandwichHook
 ```
 
-### Format
-
-```shell
-$ forge fmt
+To run tests
 ```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
+forge test
 ```
