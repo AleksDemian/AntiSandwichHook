@@ -32,13 +32,7 @@ contract AntiSandwichHook is BaseHook {
 
     constructor(IPoolManager _manager) BaseHook(_manager) {}
 
-    function getHookPermissions() 
-        public 
-        pure 
-        virtual 
-        override 
-        returns (Hooks.Permissions memory) 
-    {
+    function getHookPermissions() public pure virtual override returns (Hooks.Permissions memory) {
         return Hooks.Permissions({
             beforeInitialize: false,
             afterInitialize: false,
@@ -47,27 +41,28 @@ contract AntiSandwichHook is BaseHook {
             beforeRemoveLiquidity: false,
             afterRemoveLiquidity: false,
             beforeSwap: true,
-            afterSwap: true, 
+            afterSwap: true,
             beforeDonate: false,
             afterDonate: false,
-            beforeSwapReturnDelta: false, 
-            afterSwapReturnDelta: true, 
+            beforeSwapReturnDelta: false,
+            afterSwapReturnDelta: true,
             afterAddLiquidityReturnDelta: false,
             afterRemoveLiquidityReturnDelta: false
         });
     }
 
-    function beforeSwap(
-        address, 
-        PoolKey calldata key, 
-        IPoolManager.SwapParams calldata swapParams, 
-        bytes calldata
-    ) external virtual override onlyPoolManager returns (bytes4, BeforeSwapDelta, uint24) {
+    function beforeSwap(address, PoolKey calldata key, IPoolManager.SwapParams calldata swapParams, bytes calldata)
+        external
+        virtual
+        override
+        onlyPoolManager
+        returns (bytes4, BeforeSwapDelta, uint24)
+    {
         // Отримуємо унікальний ідентифікатор пулу
         PoolId poolId = key.toId();
         // Отримуємо останню контрольну точку для пулу
         Checkpoint storage _lastCheckpoint = _lastCheckpoints[poolId];
-        
+
         // Якщо поточний блок відрізняється від останнього блоку, коли була оновлена контрольна точка
         if (_lastCheckpoint.blockNumber != uint32(block.number)) {
             // Оновлюємо стан пулу з пул-менеджера
@@ -107,7 +102,7 @@ contract AntiSandwichHook is BaseHook {
         PoolId poolId = key.toId();
         // Отримуємо останню контрольну точку для пулу
         Checkpoint storage _lastCheckpoint = _lastCheckpoints[poolId];
-        
+
         // Якщо це перший своп у новому блоці, ініціалізуємо тимчасовий стан пулу
         if (_lastCheckpoint.blockNumber != blockNumber) {
             _lastCheckpoint.blockNumber = blockNumber;
@@ -129,14 +124,14 @@ contract AntiSandwichHook is BaseHook {
 
             // Глибоке копіювання лише тих значень, які змінюються і використовуються у розрахунках справедливих дельт
             _lastCheckpoint.state.slot0 = Slot0.wrap(poolManager.extsload(StateLibrary._getPoolStateSlot(poolId)));
-            
+
             // Отримуємо глобальний ріст комісій для токенів 0 і 1
             (uint256 feeGrowthGlobal0, uint256 feeGrowthGlobal1) = poolManager.getFeeGrowthGlobals(poolId);
-            
+
             // Зберігаємо ці значення у контрольну точку
             _lastCheckpoint.state.feeGrowthGlobal0X128 = feeGrowthGlobal0;
             _lastCheckpoint.state.feeGrowthGlobal1X128 = feeGrowthGlobal1;
-            
+
             // Зберігаємо загальну ліквідність пулу
             _lastCheckpoint.state.liquidity = poolManager.getLiquidity(poolId);
         }
@@ -145,7 +140,7 @@ contract AntiSandwichHook is BaseHook {
         BalanceDelta _fairDelta = _fairDeltas[poolId];
 
         int128 feeAmount = 0;
-       
+
         // Якщо справедлива дельта не дорівнює нулю, перевіряємо на відповідність балансу
         if (BalanceDelta.unwrap(_fairDelta) != 0) {
             // Якщо кількість токенів 0 співпадає зі справедливою дельтою, але кількість токенів 1 збільшена
@@ -161,7 +156,7 @@ contract AntiSandwichHook is BaseHook {
                 feeAmount = delta.amount0() - _fairDelta.amount0();
                 poolManager.donate(key, uint256(uint128(feeAmount)), 0, "");
             }
-            
+
             // Обнуляємо справедливу дельту після нарахування комісії
             _fairDeltas[poolId] = BalanceDelta.wrap(0);
         }

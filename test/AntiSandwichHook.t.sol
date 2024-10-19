@@ -21,33 +21,17 @@ contract AntiSandwichHookTest is Test, Deployers {
         deployFreshManagerAndRouters();
         deployMintAndApprove2Currencies();
 
-        uint160 flags = uint160(
-            Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.AFTER_SWAP_RETURNS_DELTA_FLAG
-        );
-        
-        deployCodeTo(
-            "AntiSandwichHook.sol", 
-            abi.encode(manager), 
-            address(flags)
-        );
+        uint160 flags = uint160(Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.AFTER_SWAP_RETURNS_DELTA_FLAG);
+
+        deployCodeTo("AntiSandwichHook.sol", abi.encode(manager), address(flags));
 
         hook = AntiSandwichHook(address(flags));
 
-
         (key,) = initPoolAndAddLiquidity(
-            currency0, 
-            currency1, 
-            IHooks(address(hook)), 
-            LPFeeLibrary.DYNAMIC_FEE_FLAG, 
-            SQRT_PRICE_1_1
+            currency0, currency1, IHooks(address(hook)), LPFeeLibrary.DYNAMIC_FEE_FLAG, SQRT_PRICE_1_1
         );
 
-        (noHookKey,) = initPoolAndAddLiquidity(
-            currency0, 
-            currency1, 
-            IHooks(address(0)), 
-            100, 
-            SQRT_PRICE_1_1);
+        (noHookKey,) = initPoolAndAddLiquidity(currency0, currency1, IHooks(address(0)), 100, SQRT_PRICE_1_1);
 
         vm.label(Currency.unwrap(currency0), "currency0");
         vm.label(Currency.unwrap(currency1), "currency1");
@@ -128,7 +112,7 @@ contract AntiSandwichHookTest is Test, Deployers {
         assertLe(deltaEnd.amount0(), -delta.amount0(), "front runner profit");
 
         vm.roll(block.number + 1);
-        
+
         // Повторюємо початковий своп, щоб переконатися, що стан пулу скинутий після невдалої атаки
         params = IPoolManager.SwapParams({
             zeroForOne: true,
@@ -154,7 +138,7 @@ contract AntiSandwichHookTest is Test, Deployers {
             amountSpecified: -int256(amountToSwap),
             sqrtPriceLimitX96: MAX_PRICE_LIMIT
         });
-        
+
         // Перша частина sandwich-атаки: front-running — купівля currency0 за currency1
         BalanceDelta delta = swapRouter.swap(key, params, testSettings, ZERO_BYTES);
 
@@ -168,7 +152,7 @@ contract AntiSandwichHookTest is Test, Deployers {
             sqrtPriceLimitX96: MIN_PRICE_LIMIT
         });
         BalanceDelta deltaEnd = swapRouter.swap(key, params, testSettings, ZERO_BYTES);
-        
+
         // Перевіряємо, що кількість currency1 не перевищує початкове значення
         assertLe(deltaEnd.amount1(), -delta.amount1(), "front runner profit");
 
@@ -187,7 +171,7 @@ contract AntiSandwichHookTest is Test, Deployers {
         assertEq(delta.amount0(), 997010963116644, "state did not reset");
     }
 
-    // Тест на успішну сендвіч-атаку без використання хука 
+    // Тест на успішну сендвіч-атаку без використання хука
     function test_swap_successfulSandwich() public {
         uint256 amountToSwap = 1e15;
 
@@ -252,7 +236,7 @@ contract AntiSandwichHookTest is Test, Deployers {
             sqrtPriceLimitX96: MIN_PRICE_LIMIT
         });
         BalanceDelta deltaEnd = swapRouter.swap(noHookKey, params, testSettings, ZERO_BYTES);
-        
+
         // Перевіряємо, що кількість currency1 після атаки більша або дорівнює початковому значенню
         assertGe(deltaEnd.amount1(), -delta.amount1(), "front runner loss");
 
